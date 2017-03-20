@@ -53,7 +53,11 @@ ssize_t onebyte_write(struct file *filep, const char *buf, size_t count, loff_t 
 {
 	/*please complete the function on your own*/
 	printk(KERN_ALERT "Trying to write %lu\n", count);
+
+	// if non-zero, no-space error
 	copy_from_user(onebyte_data, buf, 1);
+	if (count > 1)
+		return -ENOSPC; 
 	return 1;
 }
 
