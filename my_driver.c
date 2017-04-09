@@ -9,6 +9,7 @@
 #include <asm/uaccess.h>
 
 #define MAJOR_NUMBER 61
+#define DRIVER_SIZE 4194304
 
 /* forward declaration */
 int onebyte_open(struct inode *inode, struct file *filep);
@@ -26,6 +27,7 @@ struct file_operations onebyte_fops = {
 };
 
 char *onebyte_data = NULL;
+long data_size; // size of valid data
 
 int onebyte_open(struct inode *inode, struct file *filep)
 {
@@ -41,10 +43,15 @@ ssize_t onebyte_read(struct file *filep, char *buf, size_t count, loff_t *f_pos)
 {
 	/*please complete the function on your own*/
 	printk(KERN_ALERT "Trying to read %lu\n", count);
-	copy_to_user(buf, onebyte_data, 1);
+
+	if (*f_pos >= sizeof(onebyte_data)) // reading behind file
+		return 0;
+	if (count > data_size)
+		count = data_size; // reading more than file
+	copy_to_user(buf, onebyte_data, count);
 	if (*f_pos == 0) { // reading from the start of the byte
-		*f_pos += 1;
-		return 1;
+		*f_pos += count;
+		return count;
 	}
 	return 0; // exceed 1 byte, nothing read
 }
@@ -55,10 +62,13 @@ ssize_t onebyte_write(struct file *filep, const char *buf, size_t count, loff_t 
 	printk(KERN_ALERT "Trying to write %lu\n", count);
 
 	// if non-zero, no-space error
-	copy_from_user(onebyte_data, buf, 1);
-	if (count > 1)
+	copy_from_user(onebyte_data, buf, count);
+	data_size = count;
+	if (count > DRIVER_SIZE) {
+		data_size = DRIVER_SIZE;
 		return -ENOSPC; 
-	return 1;
+	}
+	return count;
 }
 
 static int onebyte_init(void)
@@ -73,7 +83,7 @@ static int onebyte_init(void)
 	// kmalloc is just like malloc, the second parameter is
 	// the type of memory to be allocated.
 	// To release the memory allocated by kmalloc, use kfree.
-	onebyte_data = kmalloc(sizeof(char), GFP_KERNEL);
+	onebyte_data = kmalloc(sizeof(char)*DRIVER_SIZE, GFP_KERNEL);
 	if (!onebyte_data) {
 		onebyte_exit();
 		// cannot allocate memory
@@ -82,6 +92,7 @@ static int onebyte_init(void)
 	}
 	// initialize the value to be X
 	*onebyte_data = 'X';
+	data_size = 1;
 	printk(KERN_ALERT "This is a onebyte device module\n");
 	return 0;
 }
