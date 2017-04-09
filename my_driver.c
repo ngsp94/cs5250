@@ -12,43 +12,43 @@
 #define DRIVER_SIZE 4194304
 
 /* forward declaration */
-int onebyte_open(struct inode *inode, struct file *filep);
-int onebyte_release(struct inode *inode, struct file *filep);
-ssize_t onebyte_read(struct file *filep, char *buf, size_t count, loff_t *f_pos);
-ssize_t onebyte_write(struct file *filep, const char *buf, size_t count, loff_t *f_pos);
-static void onebyte_exit(void);
+int fourMB_open(struct inode *inode, struct file *filep);
+int fourMB_release(struct inode *inode, struct file *filep);
+ssize_t fourMB_read(struct file *filep, char *buf, size_t count, loff_t *f_pos);
+ssize_t fourMB_write(struct file *filep, const char *buf, size_t count, loff_t *f_pos);
+static void fourMB_exit(void);
 
 /* definition of file_operation structure */
-struct file_operations onebyte_fops = {
-      read: onebyte_read,
-      write: onebyte_write,
-      open: onebyte_open,
-      release: onebyte_release
+struct file_operations fourMB_fops = {
+      read: fourMB_read,
+      write: fourMB_write,
+      open: fourMB_open,
+      release: fourMB_release
 };
 
-char *onebyte_data = NULL;
+char *fourMB_data = NULL;
 long data_size; // size of valid data
 
-int onebyte_open(struct inode *inode, struct file *filep)
+int fourMB_open(struct inode *inode, struct file *filep)
 {
 	return 0; // always successful
 }
 
-int onebyte_release(struct inode *inode, struct file *filep)
+int fourMB_release(struct inode *inode, struct file *filep)
 {
 	return 0; // always successful
 }
 
-ssize_t onebyte_read(struct file *filep, char *buf, size_t count, loff_t *f_pos)
+ssize_t fourMB_read(struct file *filep, char *buf, size_t count, loff_t *f_pos)
 {
 	/*please complete the function on your own*/
 	printk(KERN_ALERT "Trying to read %lu\n", count);
 
-	if (*f_pos >= sizeof(onebyte_data)) // reading behind file
+	if (*f_pos >= sizeof(fourMB_data)) // reading behind file
 		return 0;
 	if (count > data_size)
 		count = data_size; // reading more than file
-	copy_to_user(buf, onebyte_data, count);
+	copy_to_user(buf, fourMB_data, count);
 	if (*f_pos == 0) { // reading from the start of the byte
 		*f_pos += count;
 		return count;
@@ -56,13 +56,13 @@ ssize_t onebyte_read(struct file *filep, char *buf, size_t count, loff_t *f_pos)
 	return 0; // exceed 1 byte, nothing read
 }
 
-ssize_t onebyte_write(struct file *filep, const char *buf, size_t count, loff_t *f_pos)
+ssize_t fourMB_write(struct file *filep, const char *buf, size_t count, loff_t *f_pos)
 {
 	/*please complete the function on your own*/
 	printk(KERN_ALERT "Trying to write %lu\n", count);
 
 	// if non-zero, no-space error
-	copy_from_user(onebyte_data, buf, count);
+	copy_from_user(fourMB_data, buf, count);
 	data_size = count;
 	if (count > DRIVER_SIZE) {
 		data_size = DRIVER_SIZE;
@@ -71,11 +71,11 @@ ssize_t onebyte_write(struct file *filep, const char *buf, size_t count, loff_t 
 	return count;
 }
 
-static int onebyte_init(void)
+static int fourMB_init(void)
 {
 	int result;
 	// register the device
-	result = register_chrdev(MAJOR_NUMBER, "onebyte", &onebyte_fops);
+	result = register_chrdev(MAJOR_NUMBER, "fourMB", &fourMB_fops);
 	if (result < 0) {
 		return result;
 	}
@@ -83,33 +83,33 @@ static int onebyte_init(void)
 	// kmalloc is just like malloc, the second parameter is
 	// the type of memory to be allocated.
 	// To release the memory allocated by kmalloc, use kfree.
-	onebyte_data = kmalloc(sizeof(char)*DRIVER_SIZE, GFP_KERNEL);
-	if (!onebyte_data) {
-		onebyte_exit();
+	fourMB_data = kmalloc(sizeof(char)*DRIVER_SIZE, GFP_KERNEL);
+	if (!fourMB_data) {
+		fourMB_exit();
 		// cannot allocate memory
 		// return no memory error, negative signify a failure
 		return -ENOMEM;
 	}
 	// initialize the value to be X
-	*onebyte_data = 'X';
+	*fourMB_data = 'X';
 	data_size = 1;
-	printk(KERN_ALERT "This is a onebyte device module\n");
+	printk(KERN_ALERT "This is a 4MB device module\n");
 	return 0;
 }
 
-static void onebyte_exit(void)
+static void fourMB_exit(void)
 {
 	// if the pointer is pointing to something
-	if (onebyte_data) {
+	if (fourMB_data) {
 		// free the memory and assign the pointer to NULL
-		kfree(onebyte_data);
-		onebyte_data = NULL;
+		kfree(fourMB_data);
+		fourMB_data = NULL;
 	}
 	// unregister the device
-	unregister_chrdev(MAJOR_NUMBER, "onebyte");
-	printk(KERN_ALERT "Onebyte device module is unloaded\n");
+	unregister_chrdev(MAJOR_NUMBER, "fourMB");
+	printk(KERN_ALERT "4MB device module is unloaded\n");
 }
 
 MODULE_LICENSE("GPL");
-module_init(onebyte_init);
-module_exit(onebyte_exit);
+module_init(fourMB_init);
+module_exit(fourMB_exit);
