@@ -1,8 +1,8 @@
 #!bin/sh
 
-rm /dev/fourmb
+rm /dev/lcd
 rmmod my_driver
 make
 insmod ./my_driver.ko
-mknod /dev/fourmb c 61 0
+mknod /dev/lcd c 61 0
 

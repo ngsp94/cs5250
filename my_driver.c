@@ -16,6 +16,7 @@ int fourMB_open(struct inode *inode, struct file *filep);
 int fourMB_release(struct inode *inode, struct file *filep);
 ssize_t fourMB_read(struct file *filep, char *buf, size_t count, loff_t *f_pos);
 ssize_t fourMB_write(struct file *filep, const char *buf, size_t count, loff_t *f_pos);
+loff_t fourMB_llseek(struct file *fp, loff_t off, int whence);
 static void fourMB_exit(void);
 
 /* definition of file_operation structure */
@@ -23,7 +24,8 @@ struct file_operations fourMB_fops = {
       read: fourMB_read,
       write: fourMB_write,
       open: fourMB_open,
-      release: fourMB_release
+      release: fourMB_release,
+      llseek: fourMB_llseek
 };
 
 char *fourMB_data = NULL;
@@ -59,16 +61,38 @@ ssize_t fourMB_read(struct file *filep, char *buf, size_t count, loff_t *f_pos)
 ssize_t fourMB_write(struct file *filep, const char *buf, size_t count, loff_t *f_pos)
 {
 	/*please complete the function on your own*/
-	printk(KERN_ALERT "Trying to write %lu\n", count);
+	printk(KERN_ALERT "Trying to write %lu, size: %d\n", count, DRIVER_SIZE);
 
 	// if non-zero, no-space error
 	copy_from_user(fourMB_data, buf, count);
 	data_size = count;
 	if (count > DRIVER_SIZE) {
 		data_size = DRIVER_SIZE;
+		printk(KERN_ALERT "Err %d: No space left on device!", -ENOSPC);
 		return -ENOSPC; 
 	}
 	return count;
+}
+
+loff_t fourMB_llseek(struct file *fp, loff_t off, int whence) {
+	loff_t newpos;
+	switch (whence) { // type of seek
+		case SEEK_SET:
+			newpos = off;
+			break;
+		case SEEK_CUR:
+			newpos = fp->f_pos + off;
+			break;
+		case SEEK_END:
+			newpos = data_size + off;
+			break;
+		default:
+			return -EINVAL;
+	}
+	if (newpos < 0)
+		return -EINVAL;
+	fp->f_pos = newpos;
+	return newpos;
 }
 
 static int fourMB_init(void)
