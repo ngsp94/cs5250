@@ -6,10 +6,14 @@
 #include <linux/types.h>
 #include <linux/fs.h>
 #include <linux/proc_fs.h>
+#include <linux/ioctl.h> /* needed for _IOW etc */
 #include <asm/uaccess.h>
+
 
 #define MAJOR_NUMBER 61
 #define DRIVER_SIZE 4194304
+//#define SCULL_IOC_MAGIC 'k'
+//#define SCULL_HELLO_IO(SCULL_IOC_MAGIC, 1)
 
 /* forward declaration */
 int fourMB_open(struct inode *inode, struct file *filep);
@@ -17,6 +21,7 @@ int fourMB_release(struct inode *inode, struct file *filep);
 ssize_t fourMB_read(struct file *filep, char *buf, size_t count, loff_t *f_pos);
 ssize_t fourMB_write(struct file *filep, const char *buf, size_t count, loff_t *f_pos);
 loff_t fourMB_llseek(struct file *fp, loff_t off, int whence);
+//long ioctl_example(struct file *fp, unsigned int cmd, unsigned long arg);
 static void fourMB_exit(void);
 
 /* definition of file_operation structure */
@@ -26,6 +31,7 @@ struct file_operations fourMB_fops = {
       open: fourMB_open,
       release: fourMB_release,
       llseek: fourMB_llseek
+  //    .unlocked_ioctl: ioctl_example
 };
 
 char *fourMB_data = NULL;
@@ -65,14 +71,18 @@ ssize_t fourMB_write(struct file *filep, const char *buf, size_t count, loff_t *
 	printk(KERN_ALERT "Trying to write %lu, size: %d\n", count, DRIVER_SIZE);
 
 	// if non-zero, no-space error
-	copy_from_user(fourMB_data, buf, count);
-	if (count > DRIVER_SIZE) {
+	copy_from_user(fourMB_data + *f_pos, buf, count);
+	if (*f_pos + count > DRIVER_SIZE) {
 		data_size = DRIVER_SIZE;
 		printk(KERN_ALERT "Err %d: No space left on device!", -ENOSPC);
 		data_size = DRIVER_SIZE;
 		return -ENOSPC; 
 	}
-	data_size = count;
+	
+	// update current data size
+	if (*f_pos + count > data_size)
+		data_size = *f_pos + count;
+
 	return count;
 }
 
@@ -96,7 +106,31 @@ loff_t fourMB_llseek(struct file *fp, loff_t off, int whence) {
 	fp->f_pos = newpos;
 	return newpos;
 }
+/*
+long ioctl_example(struct file *fp, unsigned int cmd, unsigned long arg)
+{
+	int err = 0, tmp;
+	int retval = 0;
 
+	if (_IOC_TYPE(cmd) != SCULL_IOC_MAGIC) return -ENOTTY;
+	if (_IOC_NR(cmd) > SCULL_IOC_MAXNR) return -ENOTTY;
+
+	if (_IOC_DIR(cmd) & _IOC_READ)
+		err = !access_ok(VERIFY_WRITE, (void __user *)arg, _IOC_SIZE(cmd));
+	else if (_IOC_DIR(cmd) * _IOC_WRITE)
+		err = !access_ok(VERIFY_READ, (void __user *)arg, _IOC_SIZE(cmd));
+	if (err) return -EFAULT;
+	switch (cmd) {
+		case SCULL_HELLO:
+			printk(KERN_WARNING "hello\n");
+			break;
+		default:
+			return -ENOTTY;
+	}
+	return retval;
+}
+}
+*/
 static int fourMB_init(void)
 {
 	int result;
