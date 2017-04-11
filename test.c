@@ -8,8 +8,10 @@ int lcd;
 void test() {
 	int k, i, sum;
 	char s[3];
-	memset(s, '2', sizeof(s));
+	char buf[400];
 
+	memset(s, '2', sizeof(s));
+/*
 	printf("test begin!\n");
 
 	k = lseek(lcd, 4, SEEK_CUR);
@@ -20,12 +22,17 @@ void test() {
 
 	k = lseek(lcd, 0, SEEK_END);
 	printf("lseek = %d\n", k);
-	
-	k = lseek(lcd, -4, SEEK_END);
+*/	
+	k = lseek(lcd, 0, SEEK_END);
+	k = lseek(lcd, k-400, SEEK_SET);
 	printf("lseek = %d\n", k);
 
+	int size = read(lcd, &buf, 300);
+	printf("read %d bytes:\n%s", size, buf);
+/*
 	k = lseek(lcd, -4, -1);
 	printf("lseek = %d\n", k);
+*/
 }
 
 void initial(char i) {
@@ -43,7 +50,7 @@ int main (int argc, char **argv) {
 		printf("unable to open lcd");
 		exit(EXIT_FAILURE);
 	}
-	initial('1');
+	//initial('1');
 	test();
 	close(lcd);
 	return 0;

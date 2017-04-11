@@ -46,16 +46,17 @@ ssize_t fourMB_read(struct file *filep, char *buf, size_t count, loff_t *f_pos)
 	/*please complete the function on your own*/
 	printk(KERN_ALERT "Trying to read %lu\n", count);
 
-	if (*f_pos >= sizeof(fourMB_data)) // reading behind file
+	if (*f_pos >= data_size) // reading behind file
 		return 0;
 	if (count > data_size)
 		count = data_size; // reading more than file
-	copy_to_user(buf, fourMB_data, count);
-	if (*f_pos == 0) { // reading from the start of the byte
-		*f_pos += count;
-		return count;
-	}
-	return 0; // exceed 1 byte, nothing read
+	
+	// read according to fpos
+	copy_to_user(buf, fourMB_data + *f_pos, count);
+		
+	*f_pos += count; // update fpos
+	return count;
+
 }
 
 ssize_t fourMB_write(struct file *filep, const char *buf, size_t count, loff_t *f_pos)
@@ -65,12 +66,13 @@ ssize_t fourMB_write(struct file *filep, const char *buf, size_t count, loff_t *
 
 	// if non-zero, no-space error
 	copy_from_user(fourMB_data, buf, count);
-	data_size = count;
 	if (count > DRIVER_SIZE) {
 		data_size = DRIVER_SIZE;
 		printk(KERN_ALERT "Err %d: No space left on device!", -ENOSPC);
+		data_size = DRIVER_SIZE;
 		return -ENOSPC; 
 	}
+	data_size = count;
 	return count;
 }
 
