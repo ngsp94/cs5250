@@ -12,8 +12,9 @@
 
 #define MAJOR_NUMBER 61
 #define DRIVER_SIZE 4194304
-//#define SCULL_IOC_MAGIC 'k'
-//#define SCULL_HELLO_IO(SCULL_IOC_MAGIC, 1)
+#define SCULL_IOC_MAGIC 'k'
+#define SCULL_HELLO _IO(SCULL_IOC_MAGIC, 1)
+#define SCULL_IOC_MAXNR 1
 
 /* forward declaration */
 int fourMB_open(struct inode *inode, struct file *filep);
@@ -21,7 +22,7 @@ int fourMB_release(struct inode *inode, struct file *filep);
 ssize_t fourMB_read(struct file *filep, char *buf, size_t count, loff_t *f_pos);
 ssize_t fourMB_write(struct file *filep, const char *buf, size_t count, loff_t *f_pos);
 loff_t fourMB_llseek(struct file *fp, loff_t off, int whence);
-//long ioctl_example(struct file *fp, unsigned int cmd, unsigned long arg);
+long ioctl_example(struct file *fp, unsigned int cmd, unsigned long arg);
 static void fourMB_exit(void);
 
 /* definition of file_operation structure */
@@ -30,8 +31,8 @@ struct file_operations fourMB_fops = {
       write: fourMB_write,
       open: fourMB_open,
       release: fourMB_release,
-      llseek: fourMB_llseek
-  //    .unlocked_ioctl: ioctl_example
+      llseek: fourMB_llseek,
+      .unlocked_ioctl = ioctl_example
 };
 
 char *fourMB_data = NULL;
@@ -106,9 +107,11 @@ loff_t fourMB_llseek(struct file *fp, loff_t off, int whence) {
 	fp->f_pos = newpos;
 	return newpos;
 }
-/*
+
+
 long ioctl_example(struct file *fp, unsigned int cmd, unsigned long arg)
 {
+
 	int err = 0, tmp;
 	int retval = 0;
 
@@ -129,8 +132,8 @@ long ioctl_example(struct file *fp, unsigned int cmd, unsigned long arg)
 	}
 	return retval;
 }
-}
-*/
+
+
 static int fourMB_init(void)
 {
 	int result;

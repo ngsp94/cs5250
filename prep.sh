@@ -1,8 +1,8 @@
 #!bin/sh
 
-rm /dev/lcd
+rm /dev/scull
 rmmod my_driver
 make
 insmod ./my_driver.ko
-mknod /dev/lcd c 61 0
+mknod /dev/scull c 61 0
 
