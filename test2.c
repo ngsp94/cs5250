@@ -10,6 +10,7 @@ int lcd;
 #define SCULL_HELLO _IO(SCULL_IOC_MAGIC, 1)
 #define SCULL_SET _IOW(SCULL_IOC_MAGIC, 2, char *)
 #define SCULL_READ _IOR(SCULL_IOC_MAGIC, 3, char *)
+#define SCULL_READ_WRITE _IOWR(SCULL_IOC_MAGIC, 4, char *)
 
 void test()
 {
@@ -23,10 +24,11 @@ void test()
 	//k = write(lcd, s, sizeof(s));
 	//printf("written = %d\n", k);
 	
-	
+/*	
 	printf("write hello test msg to kernel log\n");
 	k = ioctl(lcd, SCULL_HELLO);
 	printf("result = %d\n\n", k);
+
 
 	// test writing using ioctl
 	printf("ioctl write 'User message!' to device\n");
@@ -38,7 +40,16 @@ void test()
 	k = ioctl(lcd, SCULL_READ, user_msg);
 	printf("result = %d\n", k);
 	printf("user_msg = %s\n", user_msg);
+*/
 	
+	// test read-write using ioctl
+	strcpy(user_msg, msg_to_copy);
+	printf("ioctl read-write from device\n");
+	printf("user_msg = %s\n", user_msg);
+	k = ioctl(lcd, SCULL_READ_WRITE, user_msg);
+	printf("result = %d\n", k);
+	printf("user_msg = %s\n", user_msg);
+
 }
 
 int main(int argc, char **argv)

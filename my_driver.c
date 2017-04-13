@@ -17,7 +17,8 @@
 #define SCULL_HELLO _IO(SCULL_IOC_MAGIC, 1)
 #define SCULL_SET _IOW(SCULL_IOC_MAGIC, 2, char *)
 #define SCULL_READ _IOR(SCULL_IOC_MAGIC, 3, char *)
-#define SCULL_IOC_MAXNR 3
+#define SCULL_READ_WRITE _IOWR(SCULL_IOC_MAGIC, 4, char *)
+#define SCULL_IOC_MAXNR 4
 
 /* forward declaration */
 int fourMB_open(struct inode *inode, struct file *filep);
@@ -120,6 +121,7 @@ long ioctl_example(struct file *fp, unsigned int cmd, unsigned long arg)
 	int err = 0, i;
 	int retval = 0;
 	char *user_msg;
+	char tmp[MSG_SIZE];
 
 	if (_IOC_TYPE(cmd) != SCULL_IOC_MAGIC) return -ENOTTY;
 	if (_IOC_NR(cmd) > SCULL_IOC_MAXNR) return -ENOTTY;
@@ -149,8 +151,22 @@ long ioctl_example(struct file *fp, unsigned int cmd, unsigned long arg)
 			// copy msg to user space
 			user_msg = (char __user *) arg;
 			retval = copy_to_user(user_msg, dev_msg, msg_size+1);
-			printk(KERN_WARNING "size: %d\n", msg_size);
 			break;
+		case SCULL_READ_WRITE:
+			// copy dev msg to swap later
+			user_msg =  (char __user *) arg;
+			i = 0;
+			for (i=0; i<msg_size; i++)
+				tmp[i] = dev_msg[i];
+			tmp[msg_size] = '\0';
+
+			copy_from_user(dev_msg, user_msg, MSG_SIZE);
+			copy_to_user(user_msg, tmp, msg_size+1);
+			printk(KERN_WARNING "tmp is now: %s\n", dev_msg);
+			msg_size = i;
+			retval = i;
+			break;
+			
 		default:
 			return -ENOTTY;
 	}
