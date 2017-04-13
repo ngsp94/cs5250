@@ -162,7 +162,7 @@ long ioctl_example(struct file *fp, unsigned int cmd, unsigned long arg)
 
 			copy_from_user(dev_msg, user_msg, MSG_SIZE);
 			copy_to_user(user_msg, tmp, msg_size+1);
-			printk(KERN_WARNING "tmp is now: %s\n", dev_msg);
+			printk(KERN_WARNING "dev_msg is now: %s\n", dev_msg);
 			msg_size = i;
 			retval = i;
 			break;
