@@ -12,9 +12,11 @@
 
 #define MAJOR_NUMBER 61
 #define DRIVER_SIZE 4194304
+#define MSG_SIZE 20
 #define SCULL_IOC_MAGIC 'k'
 #define SCULL_HELLO _IO(SCULL_IOC_MAGIC, 1)
-#define SCULL_IOC_MAXNR 1
+#define SCULL_SET _IOW(SCULL_IOC_MAGIC, 2, char *)
+#define SCULL_IOC_MAXNR 2
 
 /* forward declaration */
 int fourMB_open(struct inode *inode, struct file *filep);
@@ -36,6 +38,7 @@ struct file_operations fourMB_fops = {
 };
 
 char *fourMB_data = NULL;
+char *dev_msg = NULL;
 long data_size; // size of valid data
 
 int fourMB_open(struct inode *inode, struct file *filep)
@@ -112,8 +115,9 @@ loff_t fourMB_llseek(struct file *fp, loff_t off, int whence) {
 long ioctl_example(struct file *fp, unsigned int cmd, unsigned long arg)
 {
 
-	int err = 0, tmp;
+	int err = 0, i;
 	int retval = 0;
+	char *temp;
 
 	if (_IOC_TYPE(cmd) != SCULL_IOC_MAGIC) return -ENOTTY;
 	if (_IOC_NR(cmd) > SCULL_IOC_MAXNR) return -ENOTTY;
@@ -126,6 +130,16 @@ long ioctl_example(struct file *fp, unsigned int cmd, unsigned long arg)
 	switch (cmd) {
 		case SCULL_HELLO:
 			printk(KERN_WARNING "hello\n");
+			break;
+		case SCULL_SET:
+			// copy msg
+			temp = (char __user *) arg;
+			//printk(KERN_WARNING "copying: %s\n", temp);
+			(int)get_user(dev_msg, temp);
+			for (i=0; temp && i<20; i++, temp++)
+				(int)get_user(dev_msg, temp);
+			retval = i;
+			printk(KERN_WARNING "%s\n", dev_msg);
 			break;
 		default:
 			return -ENOTTY;
@@ -142,17 +156,19 @@ static int fourMB_init(void)
 	if (result < 0) {
 		return result;
 	}
-	// allocate one byte of memory for storage
+	// allocate 4MB of memory for storage
 	// kmalloc is just like malloc, the second parameter is
 	// the type of memory to be allocated.
 	// To release the memory allocated by kmalloc, use kfree.
 	fourMB_data = kmalloc(sizeof(char)*DRIVER_SIZE, GFP_KERNEL);
-	if (!fourMB_data) {
+	dev_msg = kmalloc(sizeof(char)*MSG_SIZE, GFP_KERNEL);
+	if (!fourMB_data || !dev_msg) {
 		fourMB_exit();
 		// cannot allocate memory
 		// return no memory error, negative signify a failure
 		return -ENOMEM;
 	}
+
 	// initialize the value to be X
 	*fourMB_data = 'X';
 	data_size = 1;
@@ -167,6 +183,8 @@ static void fourMB_exit(void)
 		// free the memory and assign the pointer to NULL
 		kfree(fourMB_data);
 		fourMB_data = NULL;
+		kfree(dev_msg);
+		dev_msg = NULL;
 	}
 	// unregister the device
 	unregister_chrdev(MAJOR_NUMBER, "fourMB");
