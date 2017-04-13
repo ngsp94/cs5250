@@ -148,7 +148,8 @@ long ioctl_example(struct file *fp, unsigned int cmd, unsigned long arg)
 		case SCULL_READ:
 			// copy msg to user space
 			user_msg = (char __user *) arg;
-			retval = copy_to_user(user_msg, dev_msg, msg_size);
+			retval = copy_to_user(user_msg, dev_msg, msg_size+1);
+			printk(KERN_WARNING "size: %d\n", msg_size);
 			break;
 		default:
 			return -ENOTTY;
@@ -183,7 +184,7 @@ static int fourMB_init(void)
 	data_size = 1;
 
 	*dev_msg = 'A';
-	msg_size = 12;
+	msg_size = 1;
 	printk(KERN_ALERT "This is a 4MB device module\n");
 	return 0;
 }

@@ -14,24 +14,27 @@ int lcd;
 void test()
 {
 	int k, i, sum;
-	char s[3];
-	char user_msg[20];
+	char s[3],  user_msg[20];
+	char *msg_to_copy = "User message!";
 
 	memset(s, '2', sizeof(s));
 	printf("test begin!\n");
 
-	k = write(lcd, s, sizeof(s));
-	printf("written = %d\n", k);
+	//k = write(lcd, s, sizeof(s));
+	//printf("written = %d\n", k);
 	
+	
+	printf("write hello test msg to kernel log\n");
 	k = ioctl(lcd, SCULL_HELLO);
-	printf("result = %d\n", k);
+	printf("result = %d\n\n", k);
 
 	// test writing using ioctl
-	memset(s, '3', sizeof(s));
-	k = ioctl(lcd, SCULL_SET, s);
-	printf("result = %d\n", k);
+	printf("ioctl write 'User message!' to device\n");
+	k = ioctl(lcd, SCULL_SET, msg_to_copy);
+	printf("result = %d\n\n", k);
 
 	// test reading using ioctl
+	printf("ioctl read from device\n");
 	k = ioctl(lcd, SCULL_READ, user_msg);
 	printf("result = %d\n", k);
 	printf("user_msg = %s\n", user_msg);
