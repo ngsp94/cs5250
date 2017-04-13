@@ -16,7 +16,8 @@
 #define SCULL_IOC_MAGIC 'k'
 #define SCULL_HELLO _IO(SCULL_IOC_MAGIC, 1)
 #define SCULL_SET _IOW(SCULL_IOC_MAGIC, 2, char *)
-#define SCULL_IOC_MAXNR 2
+#define SCULL_READ _IOR(SCULL_IOC_MAGIC, 3, char *)
+#define SCULL_IOC_MAXNR 3
 
 /* forward declaration */
 int fourMB_open(struct inode *inode, struct file *filep);
@@ -40,6 +41,7 @@ struct file_operations fourMB_fops = {
 char *fourMB_data = NULL;
 char *dev_msg = NULL;
 long data_size; // size of valid data
+int msg_size; // size of valid msg
 
 int fourMB_open(struct inode *inode, struct file *filep)
 {
@@ -115,9 +117,9 @@ loff_t fourMB_llseek(struct file *fp, loff_t off, int whence) {
 long ioctl_example(struct file *fp, unsigned int cmd, unsigned long arg)
 {
 
-	int err = 0;
+	int err = 0, i;
 	int retval = 0;
-	char *temp;
+	char *user_msg;
 
 	if (_IOC_TYPE(cmd) != SCULL_IOC_MAGIC) return -ENOTTY;
 	if (_IOC_NR(cmd) > SCULL_IOC_MAXNR) return -ENOTTY;
@@ -132,10 +134,21 @@ long ioctl_example(struct file *fp, unsigned int cmd, unsigned long arg)
 			printk(KERN_WARNING "hello\n");
 			break;
 		case SCULL_SET:
-			// just copy the length of dev_msg
-			temp = (char __user *) arg;
-			retval = copy_from_user(dev_msg, temp, MSG_SIZE);
+			// copy to capacity
+			user_msg = (char __user *) arg;
+			copy_from_user(dev_msg, user_msg, MSG_SIZE);
 			printk(KERN_WARNING "dev_msg is now: %s\n", dev_msg);
+			// get length of user msg
+			for (i=0; i<MSG_SIZE; i++)
+				if (user_msg[i] == '\0')
+					break;
+			msg_size = i;
+			retval = i;
+			break;
+		case SCULL_READ:
+			// copy msg to user space
+			user_msg = (char __user *) arg;
+			retval = copy_to_user(user_msg, dev_msg, msg_size);
 			break;
 		default:
 			return -ENOTTY;
@@ -168,6 +181,9 @@ static int fourMB_init(void)
 	// initialize the value to be X
 	*fourMB_data = 'X';
 	data_size = 1;
+
+	*dev_msg = 'A';
+	msg_size = 12;
 	printk(KERN_ALERT "This is a 4MB device module\n");
 	return 0;
 }

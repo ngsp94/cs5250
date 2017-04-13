@@ -9,11 +9,13 @@ int lcd;
 #define SCULL_IOC_MAGIC 'k'
 #define SCULL_HELLO _IO(SCULL_IOC_MAGIC, 1)
 #define SCULL_SET _IOW(SCULL_IOC_MAGIC, 2, char *)
+#define SCULL_READ _IOR(SCULL_IOC_MAGIC, 3, char *)
 
 void test()
 {
 	int k, i, sum;
 	char s[3];
+	char user_msg[20];
 
 	memset(s, '2', sizeof(s));
 	printf("test begin!\n");
@@ -28,6 +30,11 @@ void test()
 	memset(s, '3', sizeof(s));
 	k = ioctl(lcd, SCULL_SET, s);
 	printf("result = %d\n", k);
+
+	// test reading using ioctl
+	k = ioctl(lcd, SCULL_READ, user_msg);
+	printf("result = %d\n", k);
+	printf("user_msg = %s\n", user_msg);
 	
 }
 
