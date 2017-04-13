@@ -115,7 +115,7 @@ loff_t fourMB_llseek(struct file *fp, loff_t off, int whence) {
 long ioctl_example(struct file *fp, unsigned int cmd, unsigned long arg)
 {
 
-	int err = 0, i;
+	int err = 0;
 	int retval = 0;
 	char *temp;
 
@@ -132,14 +132,10 @@ long ioctl_example(struct file *fp, unsigned int cmd, unsigned long arg)
 			printk(KERN_WARNING "hello\n");
 			break;
 		case SCULL_SET:
-			// copy msg
+			// just copy the length of dev_msg
 			temp = (char __user *) arg;
-			//printk(KERN_WARNING "copying: %s\n", temp);
-			(int)get_user(dev_msg, temp);
-			for (i=0; temp && i<20; i++, temp++)
-				(int)get_user(dev_msg, temp);
-			retval = i;
-			printk(KERN_WARNING "%s\n", dev_msg);
+			retval = copy_from_user(dev_msg, temp, MSG_SIZE);
+			printk(KERN_WARNING "dev_msg is now: %s\n", dev_msg);
 			break;
 		default:
 			return -ENOTTY;

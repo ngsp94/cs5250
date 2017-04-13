@@ -27,6 +27,7 @@ void test()
 	// test writing using ioctl
 	memset(s, '3', sizeof(s));
 	k = ioctl(lcd, SCULL_SET, s);
+	printf("result = %d\n", k);
 	
 }
 
